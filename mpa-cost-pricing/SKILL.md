@@ -2,11 +2,46 @@
 name: mpa-cost-pricing
 description: MPA internal cost calculator and pricing engine for commercial printing and direct mail. Use when calculating quotes for printing jobs (postcards, flyers, booklets, envelopes, saddle stitch, perfect binding, coil binding), analyzing paper costs, determining equipment selection, or pricing direct mail services. Triggers on phrases like "quote this job", "price for printing", "cost to produce", "what would we charge", or any request involving MPA's printing capabilities, costs, or pricing.
 metadata:
-  version: 2.4.0
+  version: 2.5.0
   last_updated: 2025-11-02
   price_data_effective: 2025-11-01
   equipment_rates_effective: 2025-11-01
   changelog: |
+    v2.5.0 (2025-11-02): INTERNAL TEAM ENHANCEMENTS
+      - QUANTITY-BASED MARKUP MULTIPLIERS: Tiered pricing by volume
+        - Simple jobs: 3.0× (1-500), 2.5× (501-2,500), 2.0× (2,501-10K), 1.8× (10K+)
+        - Booklets: 4.0× (1-250), 3.5× (251-1K), 2.8× (1,001-5K), 2.3× (5K+)
+        - Complex jobs: 3.5× (all quantities)
+        - Aligns margin with production efficiency at scale
+      - MARGIN ALERT SYSTEM: Automatic threshold warnings
+        - <30%: ⚠️ WARNING (below breakeven)
+        - 30-50%: ⚡ BELOW TARGET
+        - 50-65%: ✓ HEALTHY
+        - 65%+: 💪 STRONG
+        - Displays after every quote with actionable guidance
+      - INTERACTIVE MARGIN RECALCULATION: "What's the margin at $X?"
+        - Real-time margin comparison at proposed price points
+        - Shows threshold alerts for new pricing
+        - Validates against $75 minimum
+      - BOOKLET COST SEPARATION: Cover/Interior/Binding breakdown
+        - Easy requoting when customer changes cover stock
+        - Transparent pricing for component-level adjustments
+        - Shows SKU and cost for each component
+      - QUANTITY BREAK UPSELL ANALYSIS: Automatic tier opportunity detection
+        - Triggers when customer is within 50% of next threshold
+        - Shows savings and additional investment required
+        - Examples: "100 more pieces for $30 saves $0.02/piece"
+      - RUSH JOB PRICING GUIDANCE: Surcharge tiers by turnaround
+        - Rush (2-3 days): +20%
+        - Super Rush (24-48 hours): +40%
+        - Same Day: +60%
+        - Applied to final quote after markup
+      - PROFIT-PER-HOUR CALCULATION (JSON mode only):
+        - Production time estimates by phase
+        - Efficiency metrics (high/medium/low)
+        - Profit per hour calculation
+        - Helps prioritize high-value jobs
+      - Expected impact: Better margin control, upsell opportunities, team efficiency
     v2.4.0 (2025-11-02): MINIMUM PRICING CLARIFICATION
       - Clarified $75 minimum applies to ALL jobs (print-only and with mail)
       - Added "Minimum Job Pricing" section with rationale
@@ -238,10 +273,240 @@ Final_quote = MAX(Quote_with_services, $75.00)
 
 Rationale: Covers CSR time, file prep, press setup, finishing labor, and overhead
 
-**Markup multipliers:**
-- Simple jobs (postcards, flyers): 2.2× (55% margin)
-- Booklets: 3.0× (67% margin)
-- Complex jobs: 3.5× (71% margin)
+### Markup Multipliers (Quantity-Tiered)
+
+**SIMPLE JOBS (postcards, flyers, single sheets):**
+- 1-500 pieces: 3.0× (67% margin) - Covers labor burden on short runs
+- 501-2,500 pieces: 2.5× (60% margin) - Balanced efficiency
+- 2,501-10,000 pieces: 2.0× (50% margin) - Volume efficiency
+- 10,000+ pieces: 1.8× (44% margin) - Maximum efficiency, compete with offset
+
+**BOOKLETS (saddle-stitch, perfect binding, coil):**
+- 1-250 books: 4.0× (75% margin) - High setup cost per unit
+- 251-1,000 books: 3.5× (71% margin) - Automation pays off
+- 1,001-5,000 books: 2.8× (64% margin) - Volume efficiency
+- 5,000+ books: 2.3× (57% margin) - Maximum efficiency
+
+**COMPLEX JOBS (die cuts, foil stamping, unusual materials):**
+- All quantities: 3.5× (71% margin) - Fixed due to specialized expertise
+
+### Margin Alert System
+
+**After calculating final margin, apply threshold alerts:**
+
+- **<30% margin:** ⚠️ **WARNING** - Below breakeven threshold
+  - Flag: "MARGIN WARNING: This job is below our 30% breakeven threshold. Review costs or increase pricing."
+  - Action: Recommend price adjustment or verify costs before proceeding
+
+- **30-50% margin:** ⚡ **BELOW TARGET** - Operational but suboptimal
+  - Flag: "MARGIN ALERT: Below our 50% target. Consider upselling or reviewing efficiency."
+  - Action: Suggest quantity breaks, paper alternatives, or value-adds
+
+- **50-65% margin:** ✓ **HEALTHY** - Target range
+  - Flag: "MARGIN: Healthy range. Good balance of competitiveness and profitability."
+  - Action: No alert needed, standard quote
+
+- **65%+ margin:** 💪 **STRONG** - Excellent profitability
+  - Flag: "MARGIN: Strong profitability. Room for competitive pricing if needed."
+  - Action: Note opportunity for client relationship building or competitive edge
+
+**Margin calculation:**
+```
+Margin_percentage = ((Final_quote - Total_cost) ÷ Final_quote) × 100
+```
+
+**Display margin alerts in conversational output AFTER the quote total.**
+
+### Interactive Margin Recalculation
+
+**When user asks "What's the margin at $X?" or similar pricing adjustments:**
+
+1. **Retrieve the most recent quote's cost breakdown** (paper, clicks, finishing, mail)
+2. **Calculate new margin** at the proposed price point
+3. **Display comparison:**
+   ```
+   MARGIN COMPARISON:
+   Original quote: $XXX.XX (XX% margin)
+   At $YYY.YY: ZZ% margin [with threshold alert]
+
+   Cost breakdown remains:
+   - Paper: $XXX.XX
+   - Clicks: $XXX.XX
+   - Finishing: $XXX.XX
+   - Mail: $XXX.XX
+   - TOTAL COST: $XXX.XX
+
+   [Apply margin alert for new margin %]
+   ```
+
+4. **Conversation patterns:**
+   - "If we quote this at $350, that brings us to a 52% margin—right in the healthy range."
+   - "At $280, we'd be at 38% margin—below our target, but might make sense for a repeat customer."
+   - "Dropping to $200 gives us only 25% margin—that's below breakeven. I'd recommend staying above $240 to maintain profitability."
+
+5. **Validate against $75 minimum:**
+   - If proposed price < $75, warn: "That would be below our $75 minimum. The lowest we can go is $75."
+
+### Booklet Cost Separation (for easy requoting)
+
+**For ALL booklet quotes, break down costs by component:**
+
+```
+BOOKLET COST BREAKDOWN:
+
+COVER COST:
+- Paper: [Brand] [Weight]# [Finish], SKU [number], [qty] sheets @ $X.XXXX = $XX.XX
+- Clicks: [Equipment] [mode], [impressions] impressions @ $X.XXXX = $XX.XX
+- Subtotal (Cover): $XX.XX
+
+INTERIOR COST:
+- Paper: [Brand] [Weight]# [Finish], SKU [number], [qty] sheets @ $X.XXXX = $XX.XX
+- Clicks: [Equipment] [mode], [impressions] impressions @ $X.XXXX = $XX.XX
+- Subtotal (Interior): $XX.XX
+
+BINDING COST:
+- [Method]: [Qty] books @ $X.XX setup + $X.XX/book = $XX.XX
+- Subtotal (Binding): $XX.XX
+
+TOTAL PRODUCTION COST: $XXX.XX
+MARKUP APPLIED: X.Xx× (quantity tier)
+QUOTED PRICE: $XXX.XX (XX% margin)
+```
+
+**Why separate components?**
+- Easy to requote if customer wants to change cover stock ("Just swap the cover to 100# Gloss—let me recalculate...")
+- Quick adjustments if quantity changes ("Interior stays the same, just rebind 500 instead of 1,000")
+- Transparent pricing for customers who ask "Why does the cover cost more than interior?"
+
+**Conversation patterns:**
+- "The cover accounts for $125 of the total—that's because we're using 130# Endurance Silk which runs $0.0936/sheet versus the interior's 60# offset at $0.0304/sheet."
+- "If you wanted to drop to 100# cover stock instead, I can save you about $40 on the cover portion."
+- "Binding adds $85 to this run—that's StitchLiner setup plus $0.17/book."
+
+### Quantity Break Upsell Analysis (automatic)
+
+**After EVERY quote, check if customer is near a quantity tier threshold:**
+
+**Tier breakpoints to check:**
+- Simple jobs: 500, 2,500, 10,000
+- Booklets: 250, 1,000, 5,000
+
+**IF customer quantity is within 50% of next tier threshold, calculate and display upsell opportunity:**
+
+```
+QUANTITY BREAK OPPORTUNITY:
+
+Current quote: [qty] pieces @ $XXX.XX ($X.XX/piece)
+
+Next tier at [next_threshold]:
+- Quantity: [next_threshold] pieces (+X more)
+- Total price: $YYY.YY
+- Cost per piece: $Y.YY/piece (XX% savings per piece)
+- Additional investment: $ZZ.ZZ for +X pieces
+
+VALUE: "You're only [difference] pieces away from the next pricing tier. For an additional $[amount], you'd get [extra] more pieces and reduce your per-piece cost by [savings]."
+```
+
+**Examples:**
+
+**Customer orders 400 postcards:**
+```
+QUANTITY BREAK OPPORTUNITY:
+You're ordering 400 pieces, just 100 away from our 500-piece tier threshold.
+
+Current: 400 @ $165.00 ($0.41/piece, 3.0× markup tier)
+At 500: 500 @ $195.00 ($0.39/piece, 2.5× markup tier)
+
+For an additional $30, you'd get 100 more postcards and save $0.02/piece.
+Value: Extra inventory for future campaigns at 5% lower cost.
+```
+
+**Customer orders 1,800 booklets:**
+```
+QUANTITY BREAK OPPORTUNITY:
+You're ordering 1,800 booklets—just 200 away from 2,000.
+
+Current: 1,800 @ $1,850 ($1.03/book, 3.5× markup tier)
+At 2,000: 2,000 @ $1,950 ($0.98/book, 2.8× markup tier)
+
+For an additional $100, you'd get 200 more booklets and save $0.05/book.
+Value: Stock up for Q4 events at 5% lower unit cost.
+```
+
+**Do NOT suggest upsell if:**
+- Quantity is already at maximum tier (10,000+ simple, 5,000+ booklets)
+- Customer is <25% toward next threshold (e.g., 150 pieces when next tier is 500)
+- Customer explicitly stated budget constraints or exact quantity requirements
+
+**Conversation tone:**
+- Helpful, not pushy: "Just a heads up—you're close to a pricing break..."
+- Quantify the value: "For $30 more, you'd get 100 extra pieces"
+- Connect to business value: "Great for future campaigns" or "Stock up for Q4"
+
+### Rush Job Pricing Guidance
+
+**When customer requests expedited turnaround, apply rush surcharges:**
+
+**Turnaround tiers:**
+```
+STANDARD (5-7 business days):
+  Base pricing (no surcharge)
+  Standard production schedule
+
+RUSH (2-3 business days):
+  +20% surcharge on final quote
+  Requires scheduling coordination
+
+SUPER RUSH (24-48 hours):
+  +40% surcharge on final quote
+  Interrupts production schedule, after-hours labor likely
+
+SAME DAY (within 24 hours):
+  +60% surcharge on final quote
+  Immediate priority, after-hours/weekend labor, significant disruption
+```
+
+**Application:**
+```
+Standard quote: $XXX.XX
+Rush surcharge: +X%
+RUSH TOTAL: $YYY.YY
+
+Breakdown:
+- Base production cost: $XXX.XX
+- Rush surcharge (+X%): $ZZ.ZZ
+- TOTAL: $YYY.YY
+```
+
+**When to apply rush pricing:**
+- Customer explicitly requests "rush", "urgent", "ASAP", "need it by [date]"
+- Requested delivery date is <5 business days from quote date
+- Job requires after-hours or weekend labor to meet deadline
+
+**Conversation patterns:**
+- "Standard turnaround is 5-7 days at $350. If you need it in 2-3 days, that's a rush job—$420 with the 20% surcharge to prioritize your job."
+- "Same-day turnaround requires immediate priority and likely after-hours work. That would be $560 instead of $350 (60% surcharge). Can we do 24-48 hours for $490 instead?"
+- "I can definitely get this done in 3 days—that's our rush tier at +20%, bringing your total to $480."
+
+**Important notes:**
+- Rush surcharge applies to FINAL QUOTE (after all costs + markup)
+- $75 minimum still applies (apply minimum FIRST, then rush surcharge)
+- Mail services with USPS deadlines may have fixed turnarounds—explain constraints
+- If customer balks at surcharge, suggest standard turnaround: "If you can wait until [date], we can do this at standard pricing of $350"
+
+**Example calculation:**
+```
+Job: 500 postcards, 4×6, 100# Endurance Gloss Cover
+Standard quote: $285.00
+Customer needs it in 2 days (RUSH tier)
+
+RUSH PRICING:
+Standard quote: $285.00
+Rush surcharge (+20%): $57.00
+RUSH TOTAL: $342.00
+
+"I can have those 500 postcards ready in 2 days. Standard pricing is $285, but to prioritize your job and meet the deadline, there's a 20% rush surcharge—your total would be $342."
+```
 
 **CRITICAL: Mail services (S-01 to S-18) are NEVER marked up. Add at face value AFTER markup applied.**
 
@@ -286,6 +551,12 @@ MPA COST:
 
 MPA QUOTE: $XXX.XX ($X.XX/piece at X.Xx markup, XX% margin)
 [If minimum applied: "Note: $75 minimum applied (calculated quote was $XX.XX)"]
+
+MARGIN ALERT: [Display appropriate threshold alert based on margin %]
+- <30%: ⚠️ WARNING - Below breakeven threshold
+- 30-50%: ⚡ BELOW TARGET - Review pricing
+- 50-65%: ✓ HEALTHY - Target range
+- 65%+: 💪 STRONG - Excellent margin
 
 RECOMMENDATION: [One clear price with brief strategic reasoning]
 ```
@@ -471,6 +742,18 @@ When the user says "output as JSON" or "JSON format", provide structured data in
     "final_quote": 336.42,
     "per_piece": 0.067,
     "margin_percent": 54.5
+  },
+  "profitability": {
+    "profit_amount": 183.50,
+    "estimated_production_time_hours": 1.5,
+    "profit_per_hour": 122.33,
+    "efficiency_notes": "High-efficiency job: simple imposition, standard stock, no finishing",
+    "time_breakdown": {
+      "setup_time_minutes": 25,
+      "press_time_minutes": 45,
+      "finishing_time_minutes": 20,
+      "total_time_minutes": 90
+    }
   }
 }
 ```
@@ -496,6 +779,33 @@ When the user says "output as JSON" or "JSON format", provide structured data in
 - `minimum_applied`: true if quote_before_minimum < $75.00
 - `minimum_amount`: Always 75.00 (configurable for future)
 - `final_quote`: MAX(quote_before_minimum, minimum_amount)
+- `profitability`: (JSON mode only) Production efficiency metrics
+  - `profit_amount`: Final_quote - Total_cost
+  - `estimated_production_time_hours`: Total time from file prep through delivery
+  - `profit_per_hour`: Profit_amount ÷ Production_time_hours
+  - `efficiency_notes`: Qualitative assessment (high/medium/low efficiency, bottlenecks)
+  - `time_breakdown`: Detailed time estimates by phase
+
+**Profitability calculation guidance:**
+
+**Time estimates (minutes):**
+- **Setup:** File prep (10-15) + Press setup (15-30) = 25-45 minutes
+- **Press time:** Base on equipment speed
+  - Iridesse/Nuvera: ~50-80 sheets/minute (simplex), ~30-50 (duplex)
+  - Versant: ~40-60 sheets/minute
+  - Colormax: ~150-200 envelopes/minute
+- **Finishing:** Cutting (10-20), Folding (varies), Binding (varies by method)
+  - Saddle stitch: 5-10 min setup + 0.05-0.10 min/book
+  - Perfect binding: 15-25 min setup + 0.15-0.25 min/book
+  - Coil: 0.5-1.0 min/book (manual)
+- **Mail prep:** NCOA/CASS (15-30), Inkjet addressing (varies), Sorting (20-40)
+
+**Efficiency tiers:**
+- **High efficiency (>$100/hour):** Simple jobs, standard stock, minimal finishing
+- **Medium efficiency ($50-100/hour):** Booklets, moderate finishing, common stocks
+- **Low efficiency (<$50/hour):** Complex jobs, special materials, extensive hand work
+
+**IMPORTANT: Profitability metrics appear ONLY in JSON mode, never in conversational output.**
 
 **Use JSON mode for:**
 - API integrations with CRM/ERP systems
