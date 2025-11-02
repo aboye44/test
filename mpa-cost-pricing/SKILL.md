@@ -1,50 +1,51 @@
 ---
 name: mpa-cost-pricing
-version: 2.3.0
-last_updated: 2025-11-02
-price_data_effective: 2025-11-01
-equipment_rates_effective: 2025-11-01
-changelog: |
-  v2.3.0 (2025-11-02): PHASE 3 MEDIUM-PRIORITY ENHANCEMENTS
-    - Added comprehensive pre-quote validation automation
-    - Validates calculations, equipment, costs, pricing before output
-    - Auto-checks imposition, spoilage, impressions, markup formula
-    - Catches errors before customer sees them
-    - Added structured error responses for API mode
-    - 8 standardized error codes (INVALID_QUANTITY, INVALID_SIZE, etc.)
-    - Includes details, suggestions, recoverable flag
-    - Enables proper API error handling
-    - Created complete API Integration Guide (API-INTEGRATION-GUIDE.md)
-    - Caching strategy with Redis example (30-40% API cost reduction)
-    - Prompt optimization patterns (structured JSON vs. natural language)
-    - Error handling best practices with retry logic
-    - Rate limiting, concurrency, timeout management
-    - Complete integration example with production code
-    - Monitoring, logging, alerting recommendations
-    - Expected: <5% error rate (was 15%), better API reliability
-  v2.2.0 (2025-11-02): PHASE 2 HIGH-PRIORITY OPTIMIZATIONS
-    - Optimized all data tables to compact inline format (40-50% token reduction)
-    - Stock table: markdown → inline (20 items, ~800 tokens → ~400 tokens)
-    - Equipment/finishing/mail tables: compact format
-    - Added explicit imposition calculation formula with orientation testing
-    - Fixed spoilage tier boundaries (inclusive: 1-500, 501-2500, 2501+)
-    - Added boundary examples showing tier transitions
-    - Enhanced conversational patterns with extensive examples
-    - Added "think aloud" patterns, equipment reasoning, industry insights
-    - Added JSON output mode for API integrations
-    - Structured schema for CRM/ERP integration
-    - Performance: 30-40% faster API responses expected
-  v2.1.0 (2025-11-01): PHASE 1 CRITICAL FIXES
-    - Fixed equipment selection logic (removed P-02 Iridesse B&W)
-    - B&W sheets ALWAYS use Nuvera, NEVER Iridesse
-    - Envelopes ONLY use Versant or Colormax, NEVER Iridesse
-    - Added explicit markup calculation formula with parentheses
-    - Clarified mail services NEVER marked up
-    - Created single-source-of-truth price update system
-    - Added validation checklist for equipment selection
-    - Optimized equipment table format (removed redundant columns)
-  v1.0.0 (2025-10-25): Initial production release
 description: MPA internal cost calculator and pricing engine for commercial printing and direct mail. Use when calculating quotes for printing jobs (postcards, flyers, booklets, envelopes, saddle stitch, perfect binding, coil binding), analyzing paper costs, determining equipment selection, or pricing direct mail services. Triggers on phrases like "quote this job", "price for printing", "cost to produce", "what would we charge", or any request involving MPA's printing capabilities, costs, or pricing.
+metadata:
+  version: 2.3.0
+  last_updated: 2025-11-02
+  price_data_effective: 2025-11-01
+  equipment_rates_effective: 2025-11-01
+  changelog: |
+    v2.3.0 (2025-11-02): PHASE 3 MEDIUM-PRIORITY ENHANCEMENTS
+      - Added comprehensive pre-quote validation automation
+      - Validates calculations, equipment, costs, pricing before output
+      - Auto-checks imposition, spoilage, impressions, markup formula
+      - Catches errors before customer sees them
+      - Added structured error responses for API mode
+      - 8 standardized error codes (INVALID_QUANTITY, INVALID_SIZE, etc.)
+      - Includes details, suggestions, recoverable flag
+      - Enables proper API error handling
+      - Created complete API Integration Guide (API-INTEGRATION-GUIDE.md)
+      - Caching strategy with Redis example (30-40% API cost reduction)
+      - Prompt optimization patterns (structured JSON vs. natural language)
+      - Error handling best practices with retry logic
+      - Rate limiting, concurrency, timeout management
+      - Complete integration example with production code
+      - Monitoring, logging, alerting recommendations
+      - Expected: <5% error rate (was 15%), better API reliability
+    v2.2.0 (2025-11-02): PHASE 2 HIGH-PRIORITY OPTIMIZATIONS
+      - Optimized all data tables to compact inline format (40-50% token reduction)
+      - Stock table: markdown → inline (20 items, ~800 tokens → ~400 tokens)
+      - Equipment/finishing/mail tables: compact format
+      - Added explicit imposition calculation formula with orientation testing
+      - Fixed spoilage tier boundaries (inclusive: 1-500, 501-2500, 2501+)
+      - Added boundary examples showing tier transitions
+      - Enhanced conversational patterns with extensive examples
+      - Added "think aloud" patterns, equipment reasoning, industry insights
+      - Added JSON output mode for API integrations
+      - Structured schema for CRM/ERP integration
+      - Performance: 30-40% faster API responses expected
+    v2.1.0 (2025-11-01): PHASE 1 CRITICAL FIXES
+      - Fixed equipment selection logic (removed P-02 Iridesse B&W)
+      - B&W sheets ALWAYS use Nuvera, NEVER Iridesse
+      - Envelopes ONLY use Versant or Colormax, NEVER Iridesse
+      - Added explicit markup calculation formula with parentheses
+      - Clarified mail services NEVER marked up
+      - Created single-source-of-truth price update system
+      - Added validation checklist for equipment selection
+      - Optimized equipment table format (removed redundant columns)
+    v1.0.0 (2025-10-25): Initial production release
 ---
 
 # Marcus Keating - MPA Cost & Pricing Expert
