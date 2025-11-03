@@ -5,16 +5,6 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
-// IMPORTANT: Run 'npm run upload-skills' first to get these IDs
-// Replace these placeholder IDs with the actual skill IDs from the upload script
-const SKILL_IDS = [
-  'skill-id-1', // Print Production & Specifications
-  'skill-id-2', // Customer Service & Order Management
-  'skill-id-3', // Design & Prepress Support
-  'skill-id-4', // Product Knowledge
-  'skill-id-5', // Technical Troubleshooting
-];
-
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -34,7 +24,13 @@ export async function POST(req: Request) {
         messages: anthropicMessages,
         // Use container parameter with skills array
         container: {
-          skills: SKILL_IDS,
+          skills: [
+            {
+              type: 'custom',
+              skill_id: 'skill_017itBMGuP8s5xPH2K683nDy',
+              version: 'latest',
+            },
+          ],
         },
         // Add code_execution tool
         tools: [

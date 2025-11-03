@@ -10,12 +10,7 @@ An AI-powered chatbot for commercial printing companies, built with **assistant-
 - 🧠 **Anthropic Skills API** - Properly configured with beta features:
   - Skills API (`skills-2025-10-02`)
   - Code Execution (`code-execution-2025-08-25`)
-- 📚 **5 Claude Skills** - Structured expertise domains:
-  - Print Production & Specifications
-  - Customer Service & Order Management
-  - Design & Prepress Support
-  - Product Knowledge
-  - Technical Troubleshooting
+- 📊 **MPA Pricing Skill** - Pre-configured with custom skill for commercial printing pricing
 - ⚡ **Code Execution Tool** - Claude can execute Python code for calculations and analysis
 
 ## Tech Stack
@@ -42,16 +37,11 @@ npm install
 cp .env.local.example .env.local
 # Edit .env.local and add your ANTHROPIC_API_KEY
 
-# 3. Upload Claude Skills (REQUIRED - do this first!)
-npm run upload-skills
-# Copy the skill IDs from the output
-
-# 4. Update app/api/chat/route.ts
-# Replace the SKILL_IDS array with your actual skill IDs
-
-# 5. Run the app
+# 3. Run the app
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000) to use the chatbot.
 
 ## Getting Started
 
@@ -82,32 +72,7 @@ Edit `.env.local` and add your Anthropic API key:
 ANTHROPIC_API_KEY=your_actual_api_key_here
 ```
 
-### 4. Upload Claude Skills
-
-This chatbot uses Anthropic's Skills API to load structured expertise. You need to upload the skills and get their IDs:
-
-```bash
-npm run upload-skills
-```
-
-This will:
-- Upload 5 Claude Skills to your Anthropic account
-- Display the skill IDs you need to use
-
-**Important:** Copy the skill IDs from the output and replace the placeholder IDs in `app/api/chat/route.ts`:
-
-```typescript
-// Replace these placeholder IDs with your actual skill IDs
-const SKILL_IDS = [
-  'skill-abc123', // Print Production & Specifications
-  'skill-def456', // Customer Service & Order Management
-  'skill-ghi789', // Design & Prepress Support
-  'skill-jkl012', // Product Knowledge
-  'skill-mno345', // Technical Troubleshooting
-];
-```
-
-### 5. Run the Development Server
+### 4. Run the Development Server
 
 ```bash
 npm run dev
@@ -128,30 +93,34 @@ printing-chatbot/
 │   ├── globals.css               # Global styles + assistant-ui styles
 │   ├── layout.tsx                # Root layout with metadata
 │   └── page.tsx                  # Home page
-├── scripts/
-│   └── upload-skills.ts          # Upload Claude Skills to get IDs
 ├── .env.local.example            # Environment variables template
-├── package.json                  # Dependencies + upload-skills script
+├── package.json                  # Dependencies
 └── README.md
 ```
 
 ## Key Components
-
-### Skills Upload Script (`scripts/upload-skills.ts`)
-
-- Uploads 5 Claude Skills to Anthropic's Skills API
-- Each skill contains detailed instructions for a specific domain
-- Returns skill IDs that are referenced in the API route
-- Run with: `npm run upload-skills`
 
 ### API Route (`app/api/chat/route.ts`)
 
 - Uses Anthropic SDK directly with `client.beta.messages.create()`
 - Model: **claude-sonnet-4-5-20250929**
 - Beta headers: `code-execution-2025-08-25,skills-2025-10-02`
-- Container parameter with skills array (references uploaded skill IDs)
+- Container parameter with MPA Pricing skill (`skill_017itBMGuP8s5xPH2K683nDy`)
 - Code execution tool enabled for calculations
 - Custom streaming implementation compatible with AI SDK format
+
+**Skills Configuration:**
+```typescript
+container: {
+  skills: [
+    {
+      type: 'custom',
+      skill_id: 'skill_017itBMGuP8s5xPH2K683nDy', // MPA Pricing skill
+      version: 'latest',
+    },
+  ],
+}
+```
 
 ### Chat Interface (`app/components/ChatInterface.tsx`)
 
@@ -160,41 +129,40 @@ printing-chatbot/
 - Real-time message streaming
 - Responsive design
 
-### Claude Skills System Prompt
+### MPA Pricing Skill
 
-The chatbot is configured with structured expertise in:
-
-1. **Print Production & Specifications** - DPI, color modes, file formats, paper types
-2. **Customer Service & Order Management** - Quoting, tracking, turnaround times
-3. **Design & Prepress Support** - File preparation, proofing, color correction
-4. **Product Knowledge** - Business cards, brochures, banners, packaging
-5. **Technical Troubleshooting** - File issues, color matching, material selection
+The chatbot uses a custom MPA Pricing skill that provides:
+- Commercial printing pricing expertise
+- Quote calculations and estimates
+- Material cost analysis
+- Production cost optimization
 
 ## Customization
 
-### Modifying Claude Skills
+### Using Different Skills
 
-Skills are defined in `scripts/upload-skills.ts`. To modify:
+To use a different skill ID, update `app/api/chat/route.ts`:
 
-1. Edit the skill definitions in the `skills` array
-2. Run `npm run upload-skills` to re-upload with new IDs
-3. Update the `SKILL_IDS` array in `app/api/chat/route.ts` with the new IDs
+```typescript
+container: {
+  skills: [
+    {
+      type: 'custom',
+      skill_id: 'your-skill-id-here',
+      version: 'latest',
+    },
+  ],
+}
+```
 
-Each skill has:
-- `name`: Display name of the skill
-- `description`: Brief description of the skill's purpose
-- `instructions`: Detailed instructions for Claude (can be very comprehensive)
+You can also use multiple skills by adding more objects to the skills array.
 
 ### Managing Skills
 
-**List your uploaded skills:**
-```bash
-# Use Anthropic API to list skills (coming soon in SDK)
-```
-
-**Update a skill:**
-- Re-upload using the script (creates new IDs)
-- Or use the Anthropic API to update existing skills
+Skills can be created and managed through the Anthropic API or Console. Each skill contains:
+- `name`: Display name of the skill
+- `description`: Brief description of the skill's purpose
+- `instructions`: Detailed instructions for Claude
 
 ### Changing the Model
 
@@ -248,18 +216,17 @@ This is a standard Next.js app and can be deployed to any platform that supports
 ### Skills API Issues
 
 **"Skill not found" error:**
-- Ensure you've run `npm run upload-skills` successfully
-- Verify the skill IDs in `app/api/chat/route.ts` match the uploaded skills
-- Skills are account-specific - use the same API key for upload and runtime
-
-**Upload script fails:**
-- Check your `ANTHROPIC_API_KEY` is set in `.env.local`
-- Ensure you have beta feature access for Skills API
-- Check the Anthropic console for any account limitations
+- Verify the skill ID in `app/api/chat/route.ts` is correct
+- Skills are account-specific - ensure your API key has access to the skill
+- Check that the skill ID exists in your Anthropic account
 
 **Beta headers not recognized:**
 - Ensure you're using `@anthropic-ai/sdk` version 0.68.0 or higher
 - Verify the beta header format: `'code-execution-2025-08-25,skills-2025-10-02'`
+
+**Skill version issues:**
+- The `version: 'latest'` parameter uses the most recent version of the skill
+- You can also specify a specific version number if needed
 
 ### "API key not found" error
 
