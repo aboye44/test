@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd printing-chatbot && npm run build",
+  "outputDirectory": "printing-chatbot/.next",
+  "installCommand": "cd printing-chatbot && npm install",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/printing-chatbot/$1"
+    }
+  ]
+}
