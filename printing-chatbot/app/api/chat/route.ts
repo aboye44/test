@@ -5,15 +5,32 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
-    // Convert messages to Anthropic format
-    const anthropicMessages = messages.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
-    }));
+    // Convert messages to Anthropic format, handling both text and content array formats
+    const anthropicMessages = messages.map((msg: any) => {
+      // Extract text content from various message formats
+      let textContent = '';
+
+      if (typeof msg.content === 'string') {
+        textContent = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        // Handle content array format from assistant-ui
+        textContent = msg.content
+          .filter((part: any) => part.type === 'text')
+          .map((part: any) => part.text)
+          .join('');
+      }
+
+      return {
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: textContent,
+      };
+    });
 
     // Create streaming response with Skills API
     const stream = await client.beta.messages.create(
@@ -49,12 +66,13 @@ export async function POST(req: Request) {
       }
     );
 
-    // Create a ReadableStream compatible with Vercel AI SDK format
+    // Create a ReadableStream compatible with Vercel AI SDK v3+ format
     const encoder = new TextEncoder();
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
           let messageId = `msg_${Date.now()}`;
+          let fullText = '';
 
           for await (const event of stream) {
             // Handle different event types
@@ -62,17 +80,29 @@ export async function POST(req: Request) {
               messageId = event.message.id;
             } else if (event.type === 'content_block_delta') {
               if (event.delta.type === 'text_delta') {
-                // Send text chunks in AI SDK format
-                const chunk = {
-                  id: messageId,
-                  role: 'assistant',
-                  content: event.delta.text,
-                };
-                controller.enqueue(encoder.encode(`0:${JSON.stringify(chunk)}\n`));
+                fullText += event.delta.text;
+
+                // Send text delta in AI SDK v3 format
+                const textDelta = `0:${JSON.stringify(event.delta.text)}\n`;
+                controller.enqueue(encoder.encode(textDelta));
+              }
+            } else if (event.type === 'message_delta') {
+              // Handle any message-level deltas
+              if (event.delta.stop_reason) {
+                // Message is complete
+                const finishData = `d:${JSON.stringify({
+                  finishReason: event.delta.stop_reason
+                })}\n`;
+                controller.enqueue(encoder.encode(finishData));
               }
             } else if (event.type === 'message_stop') {
-              // Send completion message
-              controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`));
+              // Ensure we send finish message
+              if (fullText) {
+                const finishData = `d:${JSON.stringify({
+                  finishReason: 'stop'
+                })}\n`;
+                controller.enqueue(encoder.encode(finishData));
+              }
               controller.close();
             }
           }
@@ -86,7 +116,9 @@ export async function POST(req: Request) {
     return new Response(readableStream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'x-vercel-ai-data-stream': 'v1',
+        'X-Vercel-AI-Data-Stream': 'v1',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     });
   } catch (error) {
