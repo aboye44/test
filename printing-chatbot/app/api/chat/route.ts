@@ -35,7 +35,8 @@ export async function POST(req: Request) {
         // Add code_execution tool
         tools: [
           {
-            type: 'code_execution',
+            type: 'code_execution_20250825',
+            name: 'code_execution',
           },
         ],
         stream: true,

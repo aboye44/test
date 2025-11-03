@@ -11,7 +11,6 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.40",
     "@anthropic-ai/sdk": "^0.68.0",
-    "@assistant-ui/react": "^0.11.35",
     "ai": "^5.0.86",
     "next": "16.0.1",
     "react": "19.2.0",
